@@ -1,0 +1,25 @@
+Instructions - SWE Challenge
+
+Problem definition: Create an interface to search for information from email databases. The first part is to index the test database and the second is to build an interface to query it. 
+
+Part 1: Index Email Database
+Use database.tgz (mail database) to write a program that indexes its contents in the ZincSearch tool, for example: $ ./indexer enron_mail_20110402
+
+Part 2: Profiling
+Profiling your indexer, generate a graph to analyze it during sustain.
+
+Part 3: Visualizer 
+Create a free interface to search for its contents. For example: $ ./mamuro -port 3000 Mamoru is running in http://localhost:3000
+
+Technologies
+The following technologies have to be used to solve the test. 
+
+Backend Language: Go
+Database: ZincSearch
+API Router: chi (pronounced kai)
+Interface: Vue 3
+CSS:Tailwind
+
+Do not use other external libraries in the backend.
+If you use Windows, we recommend installing
+https://docs.microsoft.com/en-us/windows/wsl/install
