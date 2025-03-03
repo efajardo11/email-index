@@ -8,6 +8,74 @@ Use database.tgz (mail database) to write a program that indexes its contents in
 Part 2: Profiling
 Profiling your indexer, generate a graph to analyze it during sustain.
 
+* For the interview, be prepared to discuss:
+
+1. Performance Metrics:
+   - Why ZincSearch calls (94.35%) dominate CPU time
+   - How our 248.05% CPU utilization shows effective parallelization
+   - Processing speed (368.91 emails/sec)
+
+2. Architecture Decisions:
+   - Worker pool implementation
+   - Batch processing strategy (1000 emails per batch)
+   - Why certain operations are CPU-intensive
+
+3. Optimization Possibilities:
+   - Batch size adjustments
+   - I/O buffering strategies
+   - Worker count tuning
+
+1. CPU Analysis (cpu_analysis.svg):
+   
+   - The large box for cgocall (94.35%) shows ZincSearch API communication is our main CPU consumer
+   - Multiple parallel branches indicate good worker pool distribution
+   - File I/O operations form significant branches, showing our disk-intensive nature
+2. Memory Analysis (memory_analysis.svg):
+   
+   - Memory allocation patterns during batch processing
+   - Buffer sizes for email processing
+   - Heap usage across worker routines
+Key Discussion Points:
+
+1. Why is this architecture efficient?
+   
+   - Parallel processing (248.05% CPU)
+   - Batch processing reduces API calls
+   - Worker pool matches CPU cores
+2. Where could we optimize?
+   
+   - Increase batch sizes to reduce ZincSearch calls
+   - Optimize file reading buffers
+   - Fine-tune worker count based on system resources
+
+- Worker Pool Design:
+
+- Using runtime.NumCPU() automatically scales to the machine's capabilities
+- Our 248.05% CPU usage shows workers are efficiently distributed
+- Channels prevent race conditions and manage work distribution smoothly
+- Error handling in workers prevents cascading failures
+- Batch Processing (1000 emails):
+
+- Chosen to balance memory usage vs API call frequency
+- Reduces network overhead by grouping documents
+- Provides regular progress updates (good for monitoring)
+- Could be increased to reduce ZincSearch calls, but would need memory monitoring
+- Why cgocall is 94.35%:
+
+- Each ZincSearch API call requires CGO transitions
+- JSON processing for each batch
+- Network communication overhead
+- Expected behavior for database-heavy operations
+- Optimization Strategies:
+
+- Increase batch size (e.g., 2000 or 5000) to reduce API calls
+- Implement connection pooling for ZincSearch
+- Use buffered I/O for file reading
+- Dynamic worker count based on:
+  - System monitoring
+  - Network latency patterns
+  - Available memory
+
 Part 3: Visualizer 
 Create a free interface to search for its contents. For example: $ ./mamuro -port 3000 Mamoru is running in http://localhost:3000
 

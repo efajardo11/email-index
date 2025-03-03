@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
+	"runtime/pprof"
 	"time"
 
 	"github.com/esteban/mail-index/pkg/domain"
@@ -15,7 +15,26 @@ import (
 
 func main() {
 	numWorkers := flag.Int("workers", runtime.NumCPU(), "Number of workers to process emails")
+	cpuprofile := flag.String("cpuprofile", "", "write cpu profile to file")
+	memprofile := flag.String("memprofile", "", "write memory profile to file")
 	flag.Parse()
+
+	// CPU profiling
+	if *cpuprofile != "" {
+		log.Printf("\n=== PROFILING ===")
+		log.Printf("Creating CPU profile at: %s", *cpuprofile)
+		f, err := os.Create(*cpuprofile)
+		if err != nil {
+			log.Fatal("could not create CPU profile: ", err)
+		}
+		log.Printf("CPU profiling started successfully")
+		defer f.Close()
+		if err := pprof.StartCPUProfile(f); err != nil {
+			log.Fatal("could not start CPU profile: ", err)
+		}
+		defer pprof.StopCPUProfile()
+		log.Printf("=== PROFILING SETUP COMPLETE ===\n")
+	}
 
 	if _, err := os.Stat(domain.EmailsRootFolder); os.IsNotExist(err) {
 		log.Fatalf("Email root folder does not exist: %s", domain.EmailsRootFolder)
@@ -101,10 +120,17 @@ func main() {
 		emailsPerSecond,
 		elapsed/60)
 
-	// Print any errors that occurred
-	for errType, count := range stats {
-		if strings.HasPrefix(errType, "error_") {
-			log.Printf("Error: %s occurred %d times", strings.TrimPrefix(errType, "error_"), count)
+	// At the end of main, before last error printing:
+	// Memory profiling
+	if *memprofile != "" {
+		f, err := os.Create(*memprofile)
+		if err != nil {
+			log.Fatal("could not create memory profile: ", err)
+		}
+		defer f.Close()
+		runtime.GC() // get up-to-date statistics
+		if err := pprof.WriteHeapProfile(f); err != nil {
+			log.Fatal("could not write memory profile: ", err)
 		}
 	}
 }
